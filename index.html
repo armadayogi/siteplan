@@ -818,7 +818,120 @@
             reader.readAsText(file);
         }
 
-        async function generatePdf() { if(!currentSchoolId) return; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4'); deselectAll(); const canvasImage = await html2canvas(document.getElementById('siteplan-canvas'), { scale: 2 }); const imgData = canvasImage.toDataURL('image/png'); doc.setFontSize(18); doc.text(`Site Plan: ${schoolName}`, 14, 22); const imgProps = doc.getImageProperties(imgData); const pdfWidth = doc.internal.pageSize.getWidth() - 28; const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width; doc.addImage(imgData, 'PNG', 14, 30, pdfWidth, pdfHeight); doc.addPage(); doc.setFontSize(16); doc.text('Rincian Data Site Plan', 14, 22); doc.setFontSize(12); let yPos = 32; const addText = (label, value) => { doc.text(`${label}: ${value}`, 14, yPos); yPos += 6; }; addText('Nama Sekolah', schoolName); addText('Jenjang', schoolLevel); addText('Kecamatan', schoolDistrict); addText('Total Luas Lahan', `${calculateLandArea().toFixed(1)} m²`); yPos += 4; doc.setFontSize(14); doc.text('Daftar Objek:', 14, yPos); yPos += 8; doc.setFontSize(11); objects.forEach(obj => { const w = pxToMeter(obj.width); const h = pxToMeter(obj.height); doc.text(`- ${obj.label}: ${w.toFixed(1)}m x ${h.toFixed(1)}m = ${(w*h).toFixed(1)} m²`, 16, yPos); yPos += 6; }); doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(`Sisa Lahan Kosong: ${calculateRemainingArea().toFixed(1)} m²`, 14, yPos + 4); doc.save(`Siteplan-${schoolName.replace(/ /g, '_')}.pdf`); }
+        async function generatePdf() {
+            if (!currentSchoolId) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 14;
+
+            // --- Halaman 1: Gambar Site Plan ---
+            deselectAll();
+            await new Promise(resolve => setTimeout(resolve, 50)); // Delay singkat
+            
+            const canvasImage = await html2canvas(document.getElementById('siteplan-canvas'), { scale: 2 });
+            const imgData = canvasImage.toDataURL('image/png');
+
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Site Plan: ${schoolName}`, margin, margin + 8);
+
+            const imgProps = doc.getImageProperties(imgData);
+            const pdfWidth = pageWidth - (margin * 2);
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            const imgY = margin + 20;
+
+            doc.addImage(imgData, 'PNG', margin, imgY, pdfWidth, pdfHeight);
+
+            // --- Halaman 2: Rincian ---
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Rincian Data Site Plan', margin, margin + 8);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            let yPos = margin + 22;
+
+            const addDetailText = (label, value) => {
+                if (yPos > pageHeight - margin) {
+                    doc.addPage();
+                    yPos = margin;
+                }
+                doc.setFont('helvetica', 'bold');
+                doc.text(label, margin, yPos);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`: ${value}`, margin + 50, yPos);
+                yPos += 8;
+            };
+
+            addDetailText('Nama Sekolah', schoolName);
+            addDetailText('Jenjang', schoolLevel);
+            addDetailText('Kecamatan', schoolDistrict);
+            addDetailText('Total Luas Lahan', `${calculateLandArea().toFixed(1)} m²`);
+            
+            yPos += 5;
+            doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Daftar Objek:', margin, yPos + 5);
+            yPos += 12;
+
+            // Header Tabel
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text("No.", margin, yPos);
+            doc.text("Label Objek", margin + 10, yPos);
+            doc.text("Ukuran (P x L)", margin + 80, yPos);
+            doc.text("Luas (m²)", margin + 120, yPos);
+            yPos += 2;
+            doc.line(margin, yPos, pageWidth - margin, yPos);
+            yPos += 5;
+            doc.setFont('helvetica', 'normal');
+
+            objects.forEach((obj, index) => {
+                if (yPos > pageHeight - margin - 10) { // Cek page break
+                    doc.addPage();
+                    yPos = margin;
+                    // Ulangi Header Tabel di halaman baru
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text("No.", margin, yPos);
+                    doc.text("Label Objek", margin + 10, yPos);
+                    doc.text("Ukuran (P x L)", margin + 80, yPos);
+                    doc.text("Luas (m²)", margin + 120, yPos);
+                    yPos += 2;
+                    doc.line(margin, yPos, pageWidth - margin, yPos);
+                    yPos += 5;
+                    doc.setFont('helvetica', 'normal');
+                }
+                const w = pxToMeter(obj.width);
+                const h = pxToMeter(obj.height);
+                doc.text(`${index + 1}.`, margin, yPos);
+                doc.text(obj.label, margin + 10, yPos);
+                doc.text(`${w.toFixed(1)}m x ${h.toFixed(1)}m`, margin + 80, yPos);
+                doc.text(`${(w * h).toFixed(1)}`, margin + 120, yPos);
+                yPos += 7;
+            });
+
+            yPos += 5;
+            if (yPos > pageHeight - margin - 20) { // Cek page break sebelum ringkasan
+                doc.addPage();
+                yPos = margin;
+            }
+            doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            addDetailText('Lahan Terbangun', `${(calculateLandArea() - calculateRemainingArea()).toFixed(1)} m²`);
+            addDetailText('Sisa Lahan Kosong', `${calculateRemainingArea().toFixed(1)} m²`);
+            
+            doc.save(`Siteplan_${schoolName.replace(/ /g, '_')}.pdf`);
+        }
+
         function shareViaWhatsapp() { if(!currentSchoolId) return; const totalLandArea = calculateLandArea().toFixed(1); const remainingArea = calculateRemainingArea().toFixed(1); let objectDetails = objects.map(obj => { const w = pxToMeter(obj.width).toFixed(1); const h = pxToMeter(obj.height).toFixed(1); return `- ${obj.label} (${w}m x ${h}m): ${(w * h).toFixed(1)} m²`; }).join('\n'); const message = `*Ringkasan Site Plan*\n\n*Sekolah:* ${schoolName}\n*Jenjang:* ${schoolLevel}\n*Kecamatan:* ${schoolDistrict}\n*Total Lahan:* ${totalLandArea} m²\n\n*Rincian Objek:*\n${objectDetails || '- Kosong'}\n\n*Sisa Lahan:* ${remainingArea} m²`; window.open(`https://wa.me/?text=${encodeURIComponent(message.trim())}`, '_blank'); }
 
         // --- Event Listeners ---
