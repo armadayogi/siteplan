@@ -35,12 +35,21 @@
             cursor: grab;
             touch-action: none; 
         }
+        #siteplan-canvas .land-shape-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
         #siteplan-canvas:active { cursor: grabbing; }
         .site-object {
             position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
             padding: 8px; border-radius: 8px; cursor: move; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             transition: all 0.2s ease; user-select: none; color: white; font-size: 11px;
             font-weight: 500; text-align: center; overflow: visible; border: 2px solid transparent;
+            z-index: 10;
         }
         .site-object.selected {
             border: 3px dashed #0d6efd; box-shadow: 0 5px 15px rgba(13, 110, 253, 0.5);
@@ -83,6 +92,8 @@
                     <p>Pilih site plan yang sudah ada atau buat baru.</p>
                     <div id="schoolList" class="list-group mb-3"></div>
                     <button class="btn btn-primary w-100" id="openNewSchoolFormBtn"><i class="bi bi-plus-circle-fill me-2"></i>Tambah Sekolah Baru</button>
+                    <label for="importJsonInput" class="btn btn-outline-primary w-100 mt-2"><i class="bi bi-upload me-2"></i>Impor File JSON</label>
+                    <input type="file" id="importJsonInput" class="d-none" accept=".json,application/json">
                 </div>
             </div>
         </div>
@@ -99,7 +110,20 @@
                         <div class="mb-3"><label for="schoolLevel" class="form-label">Jenjang</label><select class="form-select" id="schoolLevel"><option>PAUD</option><option selected>SD</option><option>SMP</option><option>NON FORMAL</option></select></div>
                         <div class="mb-3"><label for="schoolDistrict" class="form-label">Kecamatan</label><input class="form-control" list="districtOptions" id="schoolDistrict" placeholder="Ketik atau pilih..."><datalist id="districtOptions"></datalist></div>
                         <hr>
-                        <div class="row"><div class="col"><label for="landWidth" class="form-label">Panjang Lahan (m)</label><input type="number" class="form-control" id="landWidth" value="100" required></div><div class="col"><label for="landHeight" class="form-label">Lebar Lahan (m)</label><input type="number" class="form-control" id="landHeight" value="80" required></div></div>
+                        <div class="mb-3">
+                            <label for="landShape" class="form-label">Jenis Lahan</label>
+                            <select class="form-select" id="landShape">
+                                <option value="rectangle" selected>Persegi Panjang</option>
+                                <option value="square">Persegi</option>
+                                <option value="circle">Lingkaran</option>
+                                <option value="triangle">Segitiga Siku-siku</option>
+                                <option value="trapezoid">Trapesium Siku-siku</option>
+                                <option value="parallelogram">Jajaran Genjang</option>
+                            </select>
+                        </div>
+                        <div id="landDimensionsContainer">
+                            <!-- Input dinamis untuk dimensi lahan akan muncul di sini -->
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer"><button type="button" class="btn btn-secondary" id="cancelNewSchoolBtn">Batal</button><button type="button" class="btn btn-primary" id="startBtn">Simpan & Mulai</button></div>
@@ -125,11 +149,21 @@
             <div class="list-group">
                 <button type="button" class="list-group-item list-group-item-action" id="manageSchoolsBtn"><i class="bi bi-building-gear me-3 text-primary"></i>Ganti Sekolah</button>
                 <button type="button" class="list-group-item list-group-item-action" id="refreshBtn"><i class="bi bi-arrow-repeat me-3 text-primary"></i>Refresh Data</button>
+                <hr class="my-2">
                 <button type="button" class="list-group-item list-group-item-action" id="undoBtn" disabled><i class="bi bi-arrow-counterclockwise me-3"></i>Undo</button>
                 <button type="button" class="list-group-item list-group-item-action" id="redoBtn" disabled><i class="bi bi-arrow-clockwise me-3"></i>Redo</button>
-                <button type="button" class="list-group-item list-group-item-action" id="downloadPdfBtn"><i class="bi bi-file-earmark-pdf me-3 text-success"></i>Unduh PDF</button>
-                <button type="button" class="list-group-item list-group-item-action" id="shareWaBtn"><i class="bi bi-whatsapp me-3 text-info"></i>Bagikan</button>
+                <hr class="my-2">
+                <button type="button" class="list-group-item list-group-item-action" id="cutBtn" disabled><i class="bi bi-scissors me-3"></i>Potong</button>
+                <button type="button" class="list-group-item list-group-item-action" id="copyBtn" disabled><i class="bi bi-copy me-3"></i>Salin</button>
+                <button type="button" class="list-group-item list-group-item-action" id="pasteBtn" disabled><i class="bi bi-clipboard-plus me-3"></i>Tempel</button>
+                <hr class="my-2">
+                <button type="button" class="list-group-item list-group-item-action" id="editObjectBtn" disabled><i class="bi bi-pencil-square me-3 text-warning"></i>Edit Objek</button>
                 <button type="button" class="list-group-item list-group-item-action" id="deleteBtn" disabled><i class="bi bi-trash me-3 text-danger"></i>Hapus Objek</button>
+                <hr class="my-2">
+                <button type="button" class="list-group-item list-group-item-action" id="downloadPdfBtn"><i class="bi bi-file-earmark-pdf me-3 text-success"></i>Unduh Site Plan (PDF)</button>
+                <button type="button" class="list-group-item list-group-item-action" id="exportJsonBtn"><i class="bi bi-file-code me-3 text-primary"></i>Ekspor Data (JSON)</button>
+                <button type="button" class="list-group-item list-group-item-action" id="shareWaBtn"><i class="bi bi-whatsapp me-3 text-info"></i>Bagikan Ringkasan</button>
+                <hr class="my-2">
                 <button type="button" class="list-group-item list-group-item-action" id="resetBtn"><i class="bi bi-trash3-fill me-3 text-danger"></i>Reset Semua Data</button>
             </div>
         </div>
@@ -143,9 +177,37 @@
             </div>
         </div>
     </div>
+     <div class="modal fade" id="editObjectModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Edit Objek</h5></div>
+                <div class="modal-body">
+                    <div class="mb-3"><label for="editLabel" class="form-label">Label</label><input type="text" class="form-control" id="editLabel"></div>
+                    <div class="row">
+                        <div class="col"><label for="editWidth" class="form-label">Panjang (m)</label><input type="number" class="form-control" id="editWidth"></div>
+                        <div class="col"><label for="editHeight" class="form-label">Lebar (m)</label><input type="number" class="form-control" id="editHeight"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" id="confirmEditObjectBtn">Simpan Perubahan</button></div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="analysisModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content"><div class="modal-header"><h5 class="modal-title">Analisa Site Plan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="analysisModalBody"></div></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Analisa Site Plan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="analysisModalBody">
+                    <!-- Konten dinamis akan dimuat di sini -->
+                </div>
+                <div class="modal-footer d-flex justify-content-center">
+                    <button type="button" class="btn btn-outline-success btn-sm" id="downloadExcelBtn"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="downloadAnalysisPdfBtn"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+                    <button type="button" class="btn btn-outline-info btn-sm" id="shareAnalysisWaBtn"><i class="bi bi-whatsapp me-1"></i>Bagikan Detail</button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="modal fade" id="confirmResetModal" tabindex="-1">
@@ -167,6 +229,7 @@
         <button class="nav-item" id="actionsMenuBtn"><i class="bi bi-three-dots"></i><span>Aksi</span></button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -180,6 +243,7 @@
         const schoolManagerModal = new bootstrap.Modal(document.getElementById('schoolManagerModal'));
         const newSchoolModal = new bootstrap.Modal(document.getElementById('newSchoolModal'));
         const addObjectModal = new bootstrap.Modal(document.getElementById('addObjectModal'));
+        const editObjectModal = new bootstrap.Modal(document.getElementById('editObjectModal'));
         const analysisModal = new bootstrap.Modal(document.getElementById('analysisModal'));
         const confirmResetModal = new bootstrap.Modal(document.getElementById('confirmResetModal'));
         const addMenuOffcanvas = new bootstrap.Offcanvas(document.getElementById('addMenuOffcanvas'));
@@ -189,13 +253,32 @@
         let currentSchoolId = null;
         let objects = [], scale = 1, landWidthMeters = 100, landHeightMeters = 80;
         let selectedObject = null, nextId = 0, isDragging = false, isResizing = false;
-        let dragOffsetX, dragOffsetY, schoolName = '', schoolLevel = '', schoolDistrict = '';
+        let dragOffsetX, dragOffsetY;
+        let schoolName = '', schoolLevel = '', schoolDistrict = '', landShape = 'rectangle', landDimensions = {};
         let historyStack = [], redoStack = [];
+        let clipboard = null;
+        let analysisCurrentPage = 1;
+        const analysisItemsPerPage = 5;
 
         // --- Konversi & Kalkulasi ---
         const meterToPx = (m) => m * scale;
         const pxToMeter = (px) => px / scale;
-        const calculateRemainingArea = () => (landWidthMeters * landHeightMeters) - objects.reduce((total, obj) => total + (pxToMeter(obj.width) * pxToMeter(obj.height)), 0);
+        
+        function calculateLandArea() {
+            const d = landDimensions;
+            if (!d) return 0;
+            switch (landShape) {
+                case 'square': return d.side * d.side;
+                case 'circle': return Math.PI * d.radius * d.radius;
+                case 'triangle': return 0.5 * d.base * d.height;
+                case 'trapezoid': return 0.5 * (d.sideA + d.sideB) * d.height;
+                case 'parallelogram': return d.base * d.height;
+                case 'rectangle':
+                default: return (d.width || 0) * (d.height || 0);
+            }
+        }
+
+        const calculateRemainingArea = () => calculateLandArea() - objects.reduce((total, obj) => total + (pxToMeter(obj.width) * pxToMeter(obj.height)), 0);
 
         // --- Manajemen Data & Riwayat (Undo/Redo) ---
         function saveState() {
@@ -233,7 +316,7 @@
             if (!currentSchoolId) return;
             const maxId = objects.reduce((max, obj) => Math.max(max, obj.id), -1);
             nextId = maxId + 1;
-            allSchoolData[currentSchoolId] = { schoolName, schoolLevel, schoolDistrict, landWidthMeters, landHeightMeters, objects, nextId };
+            allSchoolData[currentSchoolId] = { schoolName, schoolLevel, schoolDistrict, landWidthMeters, landHeightMeters, landShape, landDimensions, objects, nextId };
             localStorage.setItem(MULTI_SITEPLAN_DATA_KEY, JSON.stringify(allSchoolData));
             localStorage.setItem(LAST_OPENED_KEY, currentSchoolId);
         }
@@ -249,6 +332,8 @@
             currentSchoolId = schoolId;
             schoolName = data.schoolName; schoolLevel = data.schoolLevel; schoolDistrict = data.schoolDistrict;
             landWidthMeters = data.landWidthMeters; landHeightMeters = data.landHeightMeters;
+            landShape = data.landShape || 'rectangle';
+            landDimensions = data.landDimensions || { width: data.landWidthMeters, height: data.landHeightMeters };
             objects = data.objects || []; nextId = data.nextId || 0;
             historyStack = [JSON.parse(JSON.stringify(objects))];
             redoStack = [];
@@ -320,12 +405,81 @@
             scale = containerWidth / landWidthMeters;
             canvas.style.width = `${containerWidth}px`;
             canvas.style.height = `${meterToPx(landHeightMeters)}px`;
-            document.getElementById('scale-info').textContent = `Skala: ${scale.toFixed(2)}px/m | Luas: ${(landWidthMeters * landHeightMeters).toFixed(0)} m²`;
+            document.getElementById('scale-info').textContent = `Skala: ${scale.toFixed(2)}px/m | Luas Lahan: ${calculateLandArea().toFixed(0)} m²`;
+            renderLandShape();
+        }
+
+        function renderLandShape() {
+            const existingSvg = canvas.querySelector('.land-shape-svg');
+            if (existingSvg) existingSvg.remove();
+
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute('class', 'land-shape-svg');
+            svg.setAttribute('viewBox', `0 0 ${canvas.clientWidth} ${canvas.clientHeight}`);
+
+            let shapeEl;
+            const d = landDimensions;
+            const wPx = canvas.clientWidth;
+            const hPx = canvas.clientHeight;
+
+            switch (landShape) {
+                case 'square':
+                    shapeEl = document.createElementNS(svgNS, 'rect');
+                    shapeEl.setAttribute('x', 0); shapeEl.setAttribute('y', 0);
+                    shapeEl.setAttribute('width', wPx); shapeEl.setAttribute('height', hPx);
+                    break;
+                case 'circle':
+                    shapeEl = document.createElementNS(svgNS, 'circle');
+                    shapeEl.setAttribute('cx', wPx / 2); shapeEl.setAttribute('cy', hPx / 2);
+                    shapeEl.setAttribute('r', wPx / 2);
+                    break;
+                case 'triangle':
+                    shapeEl = document.createElementNS(svgNS, 'polygon');
+                    shapeEl.setAttribute('points', `0,${hPx} ${wPx},${hPx} 0,0`);
+                    break;
+                case 'trapezoid':
+                     const topWidthPx = meterToPx(d.sideA);
+                     shapeEl = document.createElementNS(svgNS, 'polygon');
+                     shapeEl.setAttribute('points', `0,0 ${topWidthPx},0 ${wPx},${hPx} 0,${hPx}`);
+                     break;
+                case 'parallelogram':
+                     const offsetPx = meterToPx(d.offset);
+                     const basePx = meterToPx(d.base);
+                     shapeEl = document.createElementNS(svgNS, 'polygon');
+                     shapeEl.setAttribute('points', `${offsetPx},0 ${basePx + offsetPx},0 ${basePx},${hPx} 0,${hPx}`);
+                     break;
+                case 'rectangle':
+                default:
+                    shapeEl = document.createElementNS(svgNS, 'rect');
+                    shapeEl.setAttribute('x', 0); shapeEl.setAttribute('y', 0);
+                    shapeEl.setAttribute('width', wPx); shapeEl.setAttribute('height', hPx);
+                    break;
+            }
+
+            if (shapeEl) {
+                shapeEl.setAttribute('fill', 'rgba(255, 255, 255, 0.2)');
+                shapeEl.setAttribute('stroke', '#4a7c59');
+                shapeEl.setAttribute('stroke-width', '3');
+                svg.appendChild(shapeEl);
+            }
+            canvas.prepend(svg);
         }
 
         function renderAllObjects() {
-            canvas.innerHTML = '';
+            canvas.querySelectorAll('.site-object').forEach(el => el.remove());
             objects.forEach(obj => renderObject(obj));
+        }
+
+        let lastTouchEnd = 0;
+        function handleTouchEnd(e) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTouchEnd;
+            if (tapLength < 300 && tapLength > 0) {
+                e.preventDefault();
+                openEditObjectModal();
+            }
+            lastTouchEnd = currentTime;
         }
 
         function renderObject(objData) {
@@ -338,6 +492,8 @@
                 canvas.appendChild(el);
                 el.addEventListener('mousedown', onObjectMouseDown);
                 el.addEventListener('touchstart', onObjectMouseDown, { passive: false });
+                el.addEventListener('dblclick', openEditObjectModal);
+                el.addEventListener('touchend', handleTouchEnd);
             }
             el.className = `site-object ${objData.type}`;
             el.style.left = `${objData.x}px`; el.style.top = `${objData.y}px`;
@@ -352,45 +508,434 @@
         function onObjectMouseDown(e) { e.preventDefault(); e.stopPropagation(); const id = parseInt(e.currentTarget.dataset.id); selectObject(id); isResizing = e.target.classList.contains('handle'); isDragging = !isResizing; const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; const rect = e.currentTarget.getBoundingClientRect(); dragOffsetX = clientX - rect.left; dragOffsetY = clientY - rect.top; document.addEventListener('mousemove', onDragOrResize); document.addEventListener('mouseup', onDragOrResizeEnd); document.addEventListener('touchmove', onDragOrResize, { passive: false }); document.addEventListener('touchend', onDragOrResizeEnd); }
         function onDragOrResize(e) { if (!selectedObject) return; e.preventDefault(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; const objData = objects.find(o => o.id === selectedObject.id); const canvasRect = canvas.getBoundingClientRect(); if (isDragging) { let newX = clientX - canvasRect.left - dragOffsetX; let newY = clientY - canvasRect.top - dragOffsetY; newX = Math.max(0, Math.min(newX, canvas.clientWidth - objData.width)); newY = Math.max(0, Math.min(newY, canvas.clientHeight - objData.height)); objData.x = newX; objData.y = newY; } else if (isResizing) { let newWidth = clientX - canvasRect.left - objData.x; let newHeight = clientY - canvasRect.top - objData.y; newWidth = Math.max(20, newWidth); newHeight = Math.max(20, newHeight); if (objData.x + newWidth > canvas.clientWidth) newWidth = canvas.clientWidth - objData.x; if (objData.y + newHeight > canvas.clientHeight) newHeight = canvas.clientHeight - objData.y; objData.width = newWidth; objData.height = newHeight; } renderObject(objData); }
         function onDragOrResizeEnd() { if (isDragging || isResizing) saveState(); isDragging = false; isResizing = false; document.removeEventListener('mousemove', onDragOrResize); document.removeEventListener('mouseup', onDragOrResizeEnd); document.removeEventListener('touchmove', onDragOrResize); document.removeEventListener('touchend', onDragOrResizeEnd); }
-        function selectObject(id) { deselectAll(); selectedObject = objects.find(o => o.id === id); if (selectedObject) { document.getElementById(`obj-${id}`).classList.add('selected'); document.getElementById('deleteBtn').disabled = false; } }
-        function deselectAll() { document.querySelectorAll('.site-object.selected').forEach(el => el.classList.remove('selected')); selectedObject = null; document.getElementById('deleteBtn').disabled = true; }
+        
+        function selectObject(id) {
+            deselectAll();
+            selectedObject = objects.find(o => o.id === id);
+            if (selectedObject) {
+                document.getElementById(`obj-${id}`).classList.add('selected');
+                document.getElementById('deleteBtn').disabled = false;
+                document.getElementById('editObjectBtn').disabled = false;
+                document.getElementById('copyBtn').disabled = false;
+                document.getElementById('cutBtn').disabled = false;
+            }
+        }
+        function deselectAll() {
+            document.querySelectorAll('.site-object.selected').forEach(el => el.classList.remove('selected'));
+            selectedObject = null;
+            document.getElementById('deleteBtn').disabled = true;
+            document.getElementById('editObjectBtn').disabled = true;
+            document.getElementById('copyBtn').disabled = true;
+            document.getElementById('cutBtn').disabled = true;
+        }
 
         // --- Aksi & Fitur ---
+        function updatePasteButtonState() {
+            document.getElementById('pasteBtn').disabled = clipboard === null;
+        }
+        
+        function copyObject() {
+            if (!selectedObject) return;
+            clipboard = {
+                type: selectedObject.type,
+                label: selectedObject.label,
+                width: selectedObject.width,
+                height: selectedObject.height,
+            };
+            updatePasteButtonState();
+        }
+        
+        function cutObject() {
+            if (!selectedObject) return;
+            copyObject();
+            deleteSelectedObject();
+        }
+
+        function pasteObject() {
+            if (!clipboard) return;
+            const objData = {
+                id: nextId++,
+                type: clipboard.type,
+                label: clipboard.label,
+                x: 10,
+                y: 10,
+                width: clipboard.width,
+                height: clipboard.height
+            };
+            objects.push(objData);
+            renderObject(objData);
+            saveState();
+        }
+
+        function deleteSelectedObject() {
+            if (!selectedObject) return;
+            objects = objects.filter(o => o.id !== selectedObject.id);
+            renderAllObjects();
+            deselectAll();
+            saveState();
+        }
+
+        function renderDimensionInputs(shape) {
+            const container = document.getElementById('landDimensionsContainer');
+            let html = '';
+            switch (shape) {
+                case 'square':
+                    html = `<div class="mb-3"><label for="landSide" class="form-label">Sisi (m)</label><input type="number" class="form-control" id="landSide" value="80" required></div>`;
+                    break;
+                case 'circle':
+                    html = `<div class="mb-3"><label for="landRadius" class="form-label">Jari-jari (m)</label><input type="number" class="form-control" id="landRadius" value="50" required></div>`;
+                    break;
+                case 'triangle':
+                    html = `<div class="row"><div class="col"><label for="landBase" class="form-label">Alas (m)</label><input type="number" class="form-control" id="landBase" value="100" required></div><div class="col"><label for="landTriangleHeight" class="form-label">Tinggi (m)</label><input type="number" class="form-control" id="landTriangleHeight" value="80" required></div></div>`;
+                    break;
+                case 'trapezoid':
+                     html = `<div class="row mb-3"><div class="col"><label for="landSideA" class="form-label">Sisi Atas (m)</label><input type="number" class="form-control" id="landSideA" value="60" required></div><div class="col"><label for="landSideB" class="form-label">Sisi Bawah (m)</label><input type="number" class="form-control" id="landSideB" value="100" required></div></div><div class="mb-3"><label for="landTrapezoidHeight" class="form-label">Tinggi (m)</label><input type="number" class="form-control" id="landTrapezoidHeight" value="80" required></div>`;
+                    break;
+                case 'parallelogram':
+                    html = `<div class="row"><div class="col"><label for="landParallelogramBase" class="form-label">Alas (m)</label><input type="number" class="form-control" id="landParallelogramBase" value="100" required></div><div class="col"><label for="landParallelogramHeight" class="form-label">Tinggi (m)</label><input type="number" class="form-control" id="landParallelogramHeight" value="80" required></div></div><div class="mb-3"><label for="landParallelogramOffset" class="form-label">Kemiringan / Offset (m)</label><input type="number" class="form-control" id="landParallelogramOffset" value="20" required></div>`;
+                    break;
+                case 'rectangle':
+                default:
+                    html = `<div class="row"><div class="col"><label for="landWidth" class="form-label">Panjang (m)</label><input type="number" class="form-control" id="landWidth" value="100" required></div><div class="col"><label for="landHeight" class="form-label">Lebar (m)</label><input type="number" class="form-control" id="landHeight" value="80" required></div></div>`;
+                    break;
+            }
+            container.innerHTML = html;
+        }
+        
+        function openEditObjectModal() {
+            if (!selectedObject) return;
+            document.getElementById('editLabel').value = selectedObject.label;
+            document.getElementById('editWidth').value = pxToMeter(selectedObject.width).toFixed(1);
+            document.getElementById('editHeight').value = pxToMeter(selectedObject.height).toFixed(1);
+            actionsMenuOffcanvas.hide();
+            editObjectModal.show();
+        }
+
+        function confirmEditObject() {
+            if (!selectedObject) return;
+            const newLabel = document.getElementById('editLabel').value;
+            const newWidthM = parseFloat(document.getElementById('editWidth').value);
+            const newHeightM = parseFloat(document.getElementById('editHeight').value);
+            if (newLabel) selectedObject.label = newLabel;
+            if (!isNaN(newWidthM) && newWidthM > 0) selectedObject.width = meterToPx(newWidthM);
+            if (!isNaN(newHeightM) && newHeightM > 0) selectedObject.height = meterToPx(newHeightM);
+            renderObject(selectedObject);
+            editObjectModal.hide();
+            saveState();
+        }
+
         function openAddObjectModal(type, defaultLabel) { addMenuOffcanvas.hide(); document.getElementById('addObjectType').value = type; document.getElementById('addLabel').value = defaultLabel; if (type === 'tree') { document.getElementById('addWidth').value = 5; document.getElementById('addHeight').value = 5; } else { document.getElementById('addWidth').value = 20; document.getElementById('addHeight').value = 15; } addObjectModal.show(); }
         function confirmAddObject() { const type = document.getElementById('addObjectType').value; const label = document.getElementById('addLabel').value; const widthM = parseFloat(document.getElementById('addWidth').value); const heightM = parseFloat(document.getElementById('addHeight').value); const objData = { id: nextId++, type, label, x: 10, y: 10, width: meterToPx(widthM), height: meterToPx(heightM) }; objects.push(objData); renderObject(objData); addObjectModal.hide(); saveState(); }
-        function showAnalysis() { if(!currentSchoolId) return; const totalLandArea = landWidthMeters * landHeightMeters; const totalObjectArea = totalLandArea - calculateRemainingArea(); const percentageUsed = totalLandArea > 0 ? (totalObjectArea / totalLandArea) * 100 : 0; let objectListHtml = objects.map(obj => { const w = pxToMeter(obj.width); const h = pxToMeter(obj.height); const objectArea = w * h; const objectPercentage = totalLandArea > 0 ? (objectArea / totalLandArea) * 100 : 0; return `<li class="list-group-item d-flex justify-content-between align-items-center"><div>${obj.label}<small class="d-block text-muted">${objectPercentage.toFixed(1)}% dari total lahan</small></div><span class="badge bg-secondary rounded-pill">${objectArea.toFixed(1)} m²</span></li>`; }).join(''); document.getElementById('analysisModalBody').innerHTML = `<h6>Ringkasan Penggunaan Lahan</h6><div class="progress mb-3" style="height: 20px;"><div class="progress-bar" role="progressbar" style="width: ${percentageUsed.toFixed(1)}%;">${percentageUsed.toFixed(1)}%</div></div><ul class="list-group"><li class="list-group-item"><strong>Total Lahan:</strong> ${totalLandArea.toFixed(1)} m²</li><li class="list-group-item"><strong>Lahan Terbangun:</strong> ${totalObjectArea.toFixed(1)} m²</li><li class="list-group-item"><strong>Sisa Lahan:</strong> ${calculateRemainingArea().toFixed(1)} m²</li></ul><h6 class="mt-4">Rincian Objek</h6><ul class="list-group">${objectListHtml || '<li class="list-group-item">Belum ada objek.</li>'}</ul>`; analysisModal.show(); }
-        async function generatePdf() { if(!currentSchoolId) return; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4'); deselectAll(); const canvasImage = await html2canvas(document.getElementById('siteplan-canvas'), { scale: 2 }); const imgData = canvasImage.toDataURL('image/png'); doc.setFontSize(18); doc.text(`Site Plan: ${schoolName}`, 14, 22); const imgProps = doc.getImageProperties(imgData); const pdfWidth = doc.internal.pageSize.getWidth() - 28; const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width; doc.addImage(imgData, 'PNG', 14, 30, pdfWidth, pdfHeight); doc.addPage(); doc.setFontSize(16); doc.text('Rincian Data Site Plan', 14, 22); doc.setFontSize(12); let yPos = 32; const addText = (label, value) => { doc.text(`${label}: ${value}`, 14, yPos); yPos += 6; }; addText('Nama Sekolah', schoolName); addText('Jenjang', schoolLevel); addText('Kecamatan', schoolDistrict); addText('Total Luas Lahan', `${(landWidthMeters * landHeightMeters).toFixed(1)} m²`); yPos += 4; doc.setFontSize(14); doc.text('Daftar Objek:', 14, yPos); yPos += 8; doc.setFontSize(11); objects.forEach(obj => { const w = pxToMeter(obj.width); const h = pxToMeter(obj.height); doc.text(`- ${obj.label}: ${w.toFixed(1)}m x ${h.toFixed(1)}m = ${(w*h).toFixed(1)} m²`, 16, yPos); yPos += 6; }); doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(`Sisa Lahan Kosong: ${calculateRemainingArea().toFixed(1)} m²`, 14, yPos + 4); doc.save(`Siteplan-${schoolName.replace(/ /g, '_')}.pdf`); }
-        function shareViaWhatsapp() { if(!currentSchoolId) return; const totalLandArea = (landWidthMeters * landHeightMeters).toFixed(1); const remainingArea = calculateRemainingArea().toFixed(1); let objectDetails = objects.map(obj => { const w = pxToMeter(obj.width).toFixed(1); const h = pxToMeter(obj.height).toFixed(1); return `- ${obj.label} (${w}m x ${h}m): ${(w * h).toFixed(1)} m²`; }).join('\n'); const message = `*Ringkasan Site Plan*\n\n*Sekolah:* ${schoolName}\n*Jenjang:* ${schoolLevel}\n*Kecamatan:* ${schoolDistrict}\n*Total Lahan:* ${totalLandArea} m²\n\n*Rincian Objek:*\n${objectDetails || '- Kosong'}\n\n*Sisa Lahan:* ${remainingArea} m²`; window.open(`https://wa.me/?text=${encodeURIComponent(message.trim())}`, '_blank'); }
+        
+        function showAnalysis() {
+            if (!currentSchoolId) return;
+            analysisCurrentPage = 1; // Selalu reset ke halaman pertama saat modal dibuka
+            renderAnalysisPage();
+            analysisModal.show();
+        }
+
+        function renderAnalysisPage() {
+            const totalLandArea = calculateLandArea();
+            const totalObjectArea = totalLandArea - calculateRemainingArea();
+            const percentageUsed = totalLandArea > 0 ? (totalObjectArea / totalLandArea) * 100 : 0;
+
+            // Logika Paginasi
+            const startIndex = (analysisCurrentPage - 1) * analysisItemsPerPage;
+            const endIndex = startIndex + analysisItemsPerPage;
+            const paginatedObjects = objects.slice(startIndex, endIndex);
+            const totalPages = Math.ceil(objects.length / analysisItemsPerPage);
+
+            let objectListHtml = paginatedObjects.map(obj => {
+                const w = pxToMeter(obj.width);
+                const h = pxToMeter(obj.height);
+                const objectArea = w * h;
+                const objectPercentage = totalLandArea > 0 ? (objectArea / totalLandArea) * 100 : 0;
+                return `<li class="list-group-item d-flex justify-content-between align-items-center"><div>${obj.label}<small class="d-block text-muted">${objectPercentage.toFixed(1)}% dari total lahan</small></div><span class="badge bg-secondary rounded-pill">${objectArea.toFixed(1)} m²</span></li>`;
+            }).join('');
+
+            // Kontrol Paginasi
+            let paginationHtml = '';
+            if (totalPages > 1) {
+                paginationHtml = `<nav aria-label="Page navigation"><ul class="pagination pagination-sm justify-content-center mt-3">`;
+                paginationHtml += `<li class="page-item ${analysisCurrentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="changeAnalysisPage(${analysisCurrentPage - 1})">Sebelumnya</a></li>`;
+                for (let i = 1; i <= totalPages; i++) {
+                    paginationHtml += `<li class="page-item ${i === analysisCurrentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="changeAnalysisPage(${i})">${i}</a></li>`;
+                }
+                paginationHtml += `<li class="page-item ${analysisCurrentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="changeAnalysisPage(${analysisCurrentPage + 1})">Berikutnya</a></li>`;
+                paginationHtml += `</ul></nav>`;
+            }
+
+            document.getElementById('analysisModalBody').innerHTML = `
+                <h6>Ringkasan Penggunaan Lahan</h6>
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar" role="progressbar" style="width: ${percentageUsed.toFixed(1)}%;">${percentageUsed.toFixed(1)}%</div>
+                </div>
+                <ul class="list-group">
+                    <li class="list-group-item"><strong>Total Lahan:</strong> ${totalLandArea.toFixed(1)} m²</li>
+                    <li class="list-group-item"><strong>Lahan Terbangun:</strong> ${totalObjectArea.toFixed(1)} m²</li>
+                    <li class="list-group-item"><strong>Sisa Lahan:</strong> ${calculateRemainingArea().toFixed(1)} m²</li>
+                </ul>
+                <h6 class="mt-4">Rincian Objek (${objects.length} item)</h6>
+                <ul class="list-group">${objectListHtml || '<li class="list-group-item">Belum ada objek.</li>'}</ul>
+                ${paginationHtml}
+            `;
+        }
+
+        function changeAnalysisPage(pageNumber) {
+            const totalPages = Math.ceil(objects.length / analysisItemsPerPage);
+            if (pageNumber < 1 || pageNumber > totalPages) return;
+            analysisCurrentPage = pageNumber;
+            renderAnalysisPage();
+        }
+        
+        function downloadAnalysisExcel() {
+            if (!currentSchoolId) return;
+            const totalLandArea = calculateLandArea();
+            const totalObjectArea = totalLandArea - calculateRemainingArea();
+            const summaryData = [
+                ["Analisa Site Plan Sekolah", schoolName],
+                ["Total Luas Lahan (m²)", totalLandArea.toFixed(2)],
+                ["Total Lahan Terbangun (m²)", totalObjectArea.toFixed(2)],
+                ["Sisa Lahan (m²)", calculateRemainingArea().toFixed(2)],
+                [],
+                ["Rincian Objek"]
+            ];
+            const header = ["No", "Label", "Jenis", "Panjang (m)", "Lebar (m)", "Luas (m²)"];
+            const objectData = objects.map((obj, index) => {
+                const w = pxToMeter(obj.width);
+                const h = pxToMeter(obj.height);
+                return [index + 1, obj.label, obj.type, w.toFixed(2), h.toFixed(2), (w * h).toFixed(2)];
+            });
+            const ws = XLSX.utils.aoa_to_sheet(summaryData.concat([header]).concat(objectData));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Analisa Site Plan");
+            XLSX.writeFile(wb, `Analisa_Siteplan_${schoolName.replace(/ /g, '_')}.xlsx`);
+        }
+
+        function downloadAnalysisPdf() {
+            if (!currentSchoolId) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            doc.setFontSize(18);
+            doc.text(`Analisa Site Plan: ${schoolName}`, 14, 22);
+            doc.setFontSize(12);
+            let yPos = 32;
+            const addText = (label, value) => { doc.text(`${label}: ${value}`, 14, yPos); yPos += 7; };
+            addText('Total Luas Lahan', `${calculateLandArea().toFixed(1)} m²`);
+            addText('Total Lahan Terbangun', `${(calculateLandArea() - calculateRemainingArea()).toFixed(1)} m²`);
+            addText('Sisa Lahan', `${calculateRemainingArea().toFixed(1)} m²`);
+            yPos += 4;
+            doc.setFontSize(14);
+            doc.text('Rincian Daftar Objek:', 14, yPos);
+            yPos += 8;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Label", 14, yPos);
+            doc.text("Ukuran (m)", 80, yPos);
+            doc.text("Luas (m²)", 120, yPos);
+            yPos += 2;
+            doc.line(14, 190, 14, yPos);
+            yPos += 5;
+            doc.setFont('helvetica', 'normal');
+            objects.forEach(obj => {
+                if (yPos > 280) { doc.addPage(); yPos = 20; }
+                const w = pxToMeter(obj.width);
+                const h = pxToMeter(obj.height);
+                doc.text(obj.label, 14, yPos);
+                doc.text(`${w.toFixed(1)} x ${h.toFixed(1)}`, 80, yPos);
+                doc.text(`${(w * h).toFixed(1)}`, 120, yPos);
+                yPos += 6;
+            });
+            doc.save(`Analisa_Siteplan_${schoolName.replace(/ /g, '_')}.pdf`);
+        }
+        
+        function shareAnalysisWhatsapp() {
+            if(!currentSchoolId) return;
+            const totalLandArea = calculateLandArea().toFixed(1);
+            const totalObjectArea = (calculateLandArea() - calculateRemainingArea()).toFixed(1);
+            const remainingArea = calculateRemainingArea().toFixed(1);
+            let objectDetails = objects.map(obj => {
+                const w = pxToMeter(obj.width).toFixed(1);
+                const h = pxToMeter(obj.height).toFixed(1);
+                return `- *${obj.label}*: ${w}m x ${h}m = *${(w * h).toFixed(1)} m²*`;
+            }).join('\n');
+            const message = `*Analisa Detail Site Plan*\n\n` + `*Sekolah:* ${schoolName}\n` + `*Ringkasan Lahan:*\n` + `- Total Lahan: *${totalLandArea} m²*\n` + `- Lahan Terbangun: *${totalObjectArea} m²*\n` + `- Sisa Lahan: *${remainingArea} m²*\n\n` + `*Rincian Objek:*\n` + `${objectDetails || '- Kosong'}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(message.trim())}`, '_blank');
+        }
+
+        function exportToJson() {
+            if (!currentSchoolId) {
+                alert('Silakan pilih sekolah terlebih dahulu untuk diekspor.');
+                actionsMenuOffcanvas.hide();
+                return;
+            }
+            const dataToExport = allSchoolData[currentSchoolId];
+            const dataStr = JSON.stringify(dataToExport, null, 4);
+            const dataBlob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `siteplan_${schoolName.replace(/\s+/g, '_')}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            actionsMenuOffcanvas.hide();
+        }
+
+        function importFromJson(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (importedData && importedData.schoolName && Array.isArray(importedData.objects)) {
+                        const newId = `school-${Date.now()}`;
+                        
+                        if (typeof importedData.nextId === 'undefined') {
+                            const maxId = importedData.objects.reduce((max, obj) => Math.max(max, obj.id), -1);
+                            importedData.nextId = maxId + 1;
+                        }
+                        
+                        allSchoolData[newId] = importedData;
+                        localStorage.setItem(MULTI_SITEPLAN_DATA_KEY, JSON.stringify(allSchoolData));
+                        loadSchool(newId);
+                        schoolManagerModal.hide();
+                    } else {
+                        alert('Format file JSON tidak valid atau tidak sesuai.');
+                    }
+                } catch (error) {
+                    console.error('Gagal mengimpor file JSON:', error);
+                    alert('Terjadi kesalahan saat membaca file JSON.');
+                } finally {
+                    event.target.value = null; // Reset input agar bisa impor file yg sama lagi
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function generatePdf() { if(!currentSchoolId) return; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4'); deselectAll(); const canvasImage = await html2canvas(document.getElementById('siteplan-canvas'), { scale: 2 }); const imgData = canvasImage.toDataURL('image/png'); doc.setFontSize(18); doc.text(`Site Plan: ${schoolName}`, 14, 22); const imgProps = doc.getImageProperties(imgData); const pdfWidth = doc.internal.pageSize.getWidth() - 28; const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width; doc.addImage(imgData, 'PNG', 14, 30, pdfWidth, pdfHeight); doc.addPage(); doc.setFontSize(16); doc.text('Rincian Data Site Plan', 14, 22); doc.setFontSize(12); let yPos = 32; const addText = (label, value) => { doc.text(`${label}: ${value}`, 14, yPos); yPos += 6; }; addText('Nama Sekolah', schoolName); addText('Jenjang', schoolLevel); addText('Kecamatan', schoolDistrict); addText('Total Luas Lahan', `${calculateLandArea().toFixed(1)} m²`); yPos += 4; doc.setFontSize(14); doc.text('Daftar Objek:', 14, yPos); yPos += 8; doc.setFontSize(11); objects.forEach(obj => { const w = pxToMeter(obj.width); const h = pxToMeter(obj.height); doc.text(`- ${obj.label}: ${w.toFixed(1)}m x ${h.toFixed(1)}m = ${(w*h).toFixed(1)} m²`, 16, yPos); yPos += 6; }); doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(`Sisa Lahan Kosong: ${calculateRemainingArea().toFixed(1)} m²`, 14, yPos + 4); doc.save(`Siteplan-${schoolName.replace(/ /g, '_')}.pdf`); }
+        function shareViaWhatsapp() { if(!currentSchoolId) return; const totalLandArea = calculateLandArea().toFixed(1); const remainingArea = calculateRemainingArea().toFixed(1); let objectDetails = objects.map(obj => { const w = pxToMeter(obj.width).toFixed(1); const h = pxToMeter(obj.height).toFixed(1); return `- ${obj.label} (${w}m x ${h}m): ${(w * h).toFixed(1)} m²`; }).join('\n'); const message = `*Ringkasan Site Plan*\n\n*Sekolah:* ${schoolName}\n*Jenjang:* ${schoolLevel}\n*Kecamatan:* ${schoolDistrict}\n*Total Lahan:* ${totalLandArea} m²\n\n*Rincian Objek:*\n${objectDetails || '- Kosong'}\n\n*Sisa Lahan:* ${remainingArea} m²`; window.open(`https://wa.me/?text=${encodeURIComponent(message.trim())}`, '_blank'); }
 
         // --- Event Listeners ---
         window.addEventListener('load', () => {
             allSchoolData = JSON.parse(localStorage.getItem(MULTI_SITEPLAN_DATA_KEY)) || {};
             const lastOpenedId = localStorage.getItem(LAST_OPENED_KEY);
             populateDistrictOptions();
+            updatePasteButtonState();
             if (lastOpenedId && allSchoolData[lastOpenedId]) {
                 loadSchool(lastOpenedId);
             } else {
                 showSchoolManager();
             }
         });
-        window.addEventListener('resize', () => { if (!currentSchoolId) return; setupCanvas(); objects.forEach(renderObject); });
+        window.addEventListener('resize', () => { if (!currentSchoolId) return; setupCanvas(); renderAllObjects(); });
         canvas.addEventListener('click', (e) => { if (e.target === canvas) deselectAll(); });
-        document.getElementById('openNewSchoolFormBtn').addEventListener('click', () => { schoolManagerModal.hide(); newSchoolModal.show(); });
+        document.getElementById('openNewSchoolFormBtn').addEventListener('click', () => {
+            schoolManagerModal.hide();
+            document.getElementById('landShape').value = 'rectangle';
+            renderDimensionInputs('rectangle');
+            newSchoolModal.show();
+        });
         document.getElementById('cancelNewSchoolBtn').addEventListener('click', () => { newSchoolModal.hide(); showSchoolManager(); });
-        document.getElementById('startBtn').addEventListener('click', () => { const newId = `school-${Date.now()}`; allSchoolData[newId] = { schoolName: document.getElementById('schoolName').value || 'Sekolah Baru', schoolLevel: document.getElementById('schoolLevel').value, schoolDistrict: document.getElementById('schoolDistrict').value || 'Tanpa Kecamatan', landWidthMeters: parseFloat(document.getElementById('landWidth').value) || 100, landHeightMeters: parseFloat(document.getElementById('landHeight').value) || 80, objects: [], nextId: 0 }; newSchoolModal.hide(); loadSchool(newId); });
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const newId = `school-${Date.now()}`;
+            const shape = document.getElementById('landShape').value;
+            let dims = {};
+            let widthM = 100, heightM = 80;
+
+            switch (shape) {
+                case 'square':
+                    const side = parseFloat(document.getElementById('landSide').value) || 80;
+                    dims = { side }; widthM = heightM = side; break;
+                case 'circle':
+                    const radius = parseFloat(document.getElementById('landRadius').value) || 50;
+                    dims = { radius }; widthM = heightM = radius * 2; break;
+                case 'triangle':
+                    const base = parseFloat(document.getElementById('landBase').value) || 100;
+                    const triangleHeight = parseFloat(document.getElementById('landTriangleHeight').value) || 80;
+                    dims = { base, height: triangleHeight }; widthM = base; heightM = triangleHeight; break;
+                case 'trapezoid':
+                    const sideA = parseFloat(document.getElementById('landSideA').value) || 60;
+                    const sideB = parseFloat(document.getElementById('landSideB').value) || 100;
+                    const trapezoidHeight = parseFloat(document.getElementById('landTrapezoidHeight').value) || 80;
+                    dims = { sideA, sideB, height: trapezoidHeight }; widthM = Math.max(sideA, sideB); heightM = trapezoidHeight; break;
+                case 'parallelogram':
+                    const pBase = parseFloat(document.getElementById('landParallelogramBase').value) || 100;
+                    const pHeight = parseFloat(document.getElementById('landParallelogramHeight').value) || 80;
+                    const pOffset = parseFloat(document.getElementById('landParallelogramOffset').value) || 20;
+                    dims = { base: pBase, height: pHeight, offset: pOffset }; widthM = pBase + pOffset; heightM = pHeight; break;
+                case 'rectangle':
+                default:
+                    const width = parseFloat(document.getElementById('landWidth').value) || 100;
+                    const height = parseFloat(document.getElementById('landHeight').value) || 80;
+                    dims = { width, height }; widthM = width; heightM = height; break;
+            }
+
+            allSchoolData[newId] = { schoolName: document.getElementById('schoolName').value || 'Sekolah Baru', schoolLevel: document.getElementById('schoolLevel').value, schoolDistrict: document.getElementById('schoolDistrict').value || 'Tanpa Kecamatan', landShape: shape, landDimensions: dims, landWidthMeters: widthM, landHeightMeters: heightM, objects: [], nextId: 0 };
+            newSchoolModal.hide();
+            loadSchool(newId);
+        });
+        document.getElementById('landShape').addEventListener('change', (e) => renderDimensionInputs(e.target.value));
         document.getElementById('confirmAddObjectBtn').addEventListener('click', confirmAddObject);
-        document.getElementById('deleteBtn').addEventListener('click', () => { if (selectedObject) { objects = objects.filter(o => o.id !== selectedObject.id); renderAllObjects(); deselectAll(); saveState(); } });
+        document.getElementById('confirmEditObjectBtn').addEventListener('click', confirmEditObject);
+        document.getElementById('editObjectBtn').addEventListener('click', openEditObjectModal);
+        
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            copyObject();
+            actionsMenuOffcanvas.hide();
+        });
+        document.getElementById('cutBtn').addEventListener('click', () => {
+            cutObject();
+            actionsMenuOffcanvas.hide();
+        });
+        document.getElementById('pasteBtn').addEventListener('click', () => {
+            pasteObject();
+            actionsMenuOffcanvas.hide();
+        });
+        document.getElementById('deleteBtn').addEventListener('click', deleteSelectedObject);
+
         document.getElementById('resetBtn').addEventListener('click', () => confirmResetModal.show());
         document.getElementById('confirmResetBtn').addEventListener('click', () => { confirmResetModal.hide(); resetAllData(); });
         document.getElementById('manageSchoolsBtn').addEventListener('click', () => { actionsMenuOffcanvas.hide(); showSchoolManager(); });
         document.getElementById('addMenuBtn').addEventListener('click', () => addMenuOffcanvas.show());
         document.getElementById('actionsMenuBtn').addEventListener('click', () => actionsMenuOffcanvas.show());
         document.getElementById('analysisMenuBtn').addEventListener('click', showAnalysis);
+        document.getElementById('downloadExcelBtn').addEventListener('click', downloadAnalysisExcel);
+        document.getElementById('downloadAnalysisPdfBtn').addEventListener('click', downloadAnalysisPdf);
+        document.getElementById('shareAnalysisWaBtn').addEventListener('click', shareAnalysisWhatsapp);
         document.getElementById('downloadPdfBtn').addEventListener('click', generatePdf);
+        document.getElementById('exportJsonBtn').addEventListener('click', exportToJson);
+        document.getElementById('importJsonInput').addEventListener('change', importFromJson);
         document.getElementById('shareWaBtn').addEventListener('click', shareViaWhatsapp);
         document.getElementById('undoBtn').addEventListener('click', undo);
         document.getElementById('redoBtn').addEventListener('click', redo);
         document.getElementById('refreshBtn').addEventListener('click', refreshData);
+        
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+
+            if (e.ctrlKey || e.metaKey) { // metaKey untuk macOS
+                switch (e.key.toLowerCase()) {
+                    case 'c':
+                        if (selectedObject) { e.preventDefault(); copyObject(); }
+                        break;
+                    case 'x':
+                        if (selectedObject) { e.preventDefault(); cutObject(); }
+                        break;
+                    case 'v':
+                        if (clipboard) { e.preventDefault(); pasteObject(); }
+                        break;
+                }
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedObject) { e.preventDefault(); deleteSelectedObject(); }
+            }
+        });
+
         const addMenuOffcanvasEl = document.getElementById('addMenuOffcanvas');
         const actionsMenuOffcanvasEl = document.getElementById('actionsMenuOffcanvas');
         const bottomNav = document.querySelector('.bottom-nav');
@@ -398,3 +943,4 @@
     </script>
 </body>
 </html>
+
