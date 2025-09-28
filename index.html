@@ -20,6 +20,66 @@
             background-color: #f0f2f5;
             padding-bottom: 80px;
         }
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: opacity 0.5s ease-out;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            width: 100%;
+            max-width: 400px;
+            margin: 1rem;
+        }
+        .login-card.shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .login-card .form-control {
+            border-radius: 0.75rem;
+            padding: 0.8rem 1rem;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            transition: all 0.2s ease-in-out;
+        }
+        .login-card .form-control:focus {
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            background-color: #fff;
+            border-color: #86b7fe;
+        }
+        .login-card .btn-primary {
+            padding: 0.8rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 5px rgba(13, 110, 253, 0.2);
+        }
+        .login-card .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        }
+        #main-app-content {
+            display: none; /* Disembunyikan secara default */
+        }
         #siteplan-canvas {
             position: relative;
             background-color: #a8d5ba;
@@ -83,150 +143,176 @@
 </head>
 <body>
 
-    <!-- Modal Manajer Sekolah -->
-    <div class="modal fade" id="schoolManagerModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title"><i class="bi bi-building-gear me-2"></i>Manajer Site Plan</h5></div>
-                <div class="modal-body">
-                    <p>Pilih site plan yang sudah ada atau buat baru.</p>
-                    <div id="schoolList" class="list-group mb-3"></div>
-                    <button class="btn btn-primary w-100" id="openNewSchoolFormBtn"><i class="bi bi-plus-circle-fill me-2"></i>Tambah Sekolah Baru</button>
-                    <label for="importJsonInput" class="btn btn-outline-primary w-100 mt-2"><i class="bi bi-upload me-2"></i>Impor File JSON</label>
-                    <input type="file" id="importJsonInput" class="d-none" accept=".json,application/json">
+    <!-- Layar Login -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="text-center mb-4">
+                <i class="bi bi-buildings-fill text-primary" style="font-size: 3rem;"></i>
+                <h3 class="mt-3 mb-1 fw-bold">Site Plan Login</h3>
+                <p class="text-muted">Masuk untuk mengelola denah sekolah.</p>
+            </div>
+            <form id="login-form">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" required>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Sekolah Baru -->
-    <div class="modal fade" id="newSchoolModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title"><i class="bi bi-info-circle-fill me-2"></i>Data Sekolah Baru</h5></div>
-                <div class="modal-body">
-                    <form id="newSchoolForm">
-                        <div class="mb-3"><label for="schoolName" class="form-label">Nama Sekolah</label><input type="text" class="form-control" id="schoolName" required></div>
-                        <div class="mb-3"><label for="schoolLevel" class="form-label">Jenjang</label><select class="form-select" id="schoolLevel"><option>PAUD</option><option selected>SD</option><option>SMP</option><option>NON FORMAL</option></select></div>
-                        <div class="mb-3"><label for="schoolDistrict" class="form-label">Kecamatan</label><input class="form-control" list="districtOptions" id="schoolDistrict" placeholder="Ketik atau pilih..."><datalist id="districtOptions"></datalist></div>
-                        <hr>
-                        <div class="mb-3">
-                            <label for="landShape" class="form-label">Jenis Lahan</label>
-                            <select class="form-select" id="landShape">
-                                <option value="rectangle" selected>Persegi Panjang</option>
-                                <option value="square">Persegi</option>
-                                <option value="circle">Lingkaran</option>
-                                <option value="triangle">Segitiga Siku-siku</option>
-                                <option value="trapezoid">Trapesium Siku-siku</option>
-                                <option value="parallelogram">Jajaran Genjang</option>
-                            </select>
-                        </div>
-                        <div id="landDimensionsContainer">
-                            <!-- Input dinamis untuk dimensi lahan akan muncul di sini -->
-                        </div>
-                    </form>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" id="cancelNewSchoolBtn">Batal</button><button type="button" class="btn btn-primary" id="startBtn">Simpan & Mulai</button></div>
-            </div>
+                <button type="submit" class="btn btn-primary w-100 mt-3">Login</button>
+                <p id="login-error" class="text-danger text-center small mt-3 mb-0"></p>
+            </form>
         </div>
-    </div>
-
-    <!-- Offcanvas dan Modal lainnya -->
-    <div class="offcanvas offcanvas-bottom" tabindex="-1" id="addMenuOffcanvas" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
-        <div class="offcanvas-header"><h5 class="offcanvas-title">Tambah Objek</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-        <div class="offcanvas-body">
-            <div class="list-group">
-                <button type="button" class="list-group-item list-group-item-action" onclick="openAddObjectModal('building', 'Gedung Kelas')"><i class="bi bi-building me-3"></i>Gedung</button>
-                <button type="button" class="list-group-item list-group-item-action" onclick="openAddObjectModal('tree', 'Pohon')"><i class="bi bi-tree me-3"></i>Pohon</button>
-                <button type="button" class="list-group-item list-group-item-action" onclick="openAddObjectModal('field', 'Lapangan')"><i class="bi bi-play-circle me-3"></i>Lapangan</button>
-                <button type="button" class="list-group-item list-group-item-action" onclick="openAddObjectModal('parking', 'Parkiran')"><i class="bi bi-p-circle me-3"></i>Parkiran</button>
-            </div>
-        </div>
-    </div>
-    <div class="offcanvas offcanvas-bottom" tabindex="-1" id="actionsMenuOffcanvas" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
-        <div class="offcanvas-header"><h5 class="offcanvas-title">Aksi</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
-        <div class="offcanvas-body">
-            <div class="list-group">
-                <button type="button" class="list-group-item list-group-item-action" id="manageSchoolsBtn"><i class="bi bi-building-gear me-3 text-primary"></i>Ganti Sekolah</button>
-                <button type="button" class="list-group-item list-group-item-action" id="refreshBtn"><i class="bi bi-arrow-repeat me-3 text-primary"></i>Refresh Data</button>
-                <hr class="my-2">
-                <button type="button" class="list-group-item list-group-item-action" id="undoBtn" disabled><i class="bi bi-arrow-counterclockwise me-3"></i>Undo</button>
-                <button type="button" class="list-group-item list-group-item-action" id="redoBtn" disabled><i class="bi bi-arrow-clockwise me-3"></i>Redo</button>
-                <hr class="my-2">
-                <button type="button" class="list-group-item list-group-item-action" id="cutBtn" disabled><i class="bi bi-scissors me-3"></i>Potong</button>
-                <button type="button" class="list-group-item list-group-item-action" id="copyBtn" disabled><i class="bi bi-copy me-3"></i>Salin</button>
-                <button type="button" class="list-group-item list-group-item-action" id="pasteBtn" disabled><i class="bi bi-clipboard-plus me-3"></i>Tempel</button>
-                <hr class="my-2">
-                <button type="button" class="list-group-item list-group-item-action" id="editObjectBtn" disabled><i class="bi bi-pencil-square me-3 text-warning"></i>Edit Objek</button>
-                <button type="button" class="list-group-item list-group-item-action" id="deleteBtn" disabled><i class="bi bi-trash me-3 text-danger"></i>Hapus Objek</button>
-                <hr class="my-2">
-                <button type="button" class="list-group-item list-group-item-action" id="downloadPdfBtn"><i class="bi bi-file-earmark-pdf me-3 text-success"></i>Unduh Site Plan (PDF)</button>
-                <button type="button" class="list-group-item list-group-item-action" id="exportJsonBtn"><i class="bi bi-file-code me-3 text-primary"></i>Ekspor Data (JSON)</button>
-                <button type="button" class="list-group-item list-group-item-action" id="shareWaBtn"><i class="bi bi-whatsapp me-3 text-info"></i>Bagikan Ringkasan</button>
-                <hr class="my-2">
-                <button type="button" class="list-group-item list-group-item-action" id="resetBtn"><i class="bi bi-trash3-fill me-3 text-danger"></i>Reset Semua Data</button>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="addObjectModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title" id="addObjectModalTitle">Tambah Objek</h5></div>
-                <div class="modal-body"><input type="hidden" id="addObjectType"><div class="mb-3"><label for="addLabel" class="form-label">Label</label><input type="text" class="form-control" id="addLabel"></div><div class="row"><div class="col"><label for="addWidth" class="form-label">Panjang (m)</label><input type="number" class="form-control" id="addWidth" value="20"></div><div class="col"><label for="addHeight" class="form-label">Lebar (m)</label><input type="number" class="form-control" id="addHeight" value="15"></div></div></div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" id="confirmAddObjectBtn">Tambahkan</button></div>
-            </div>
-        </div>
-    </div>
-     <div class="modal fade" id="editObjectModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Edit Objek</h5></div>
-                <div class="modal-body">
-                    <div class="mb-3"><label for="editLabel" class="form-label">Label</label><input type="text" class="form-control" id="editLabel"></div>
-                    <div class="row">
-                        <div class="col"><label for="editWidth" class="form-label">Panjang (m)</label><input type="number" class="form-control" id="editWidth"></div>
-                        <div class="col"><label for="editHeight" class="form-label">Lebar (m)</label><input type="number" class="form-control" id="editHeight"></div>
-                    </div>
-                </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" id="confirmEditObjectBtn">Simpan Perubahan</button></div>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="analysisModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Analisa Site Plan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="analysisModalBody">
-                    <!-- Konten dinamis akan dimuat di sini -->
-                </div>
-                <div class="modal-footer d-flex justify-content-center">
-                    <button type="button" class="btn btn-outline-success btn-sm" id="downloadExcelBtn"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="downloadAnalysisPdfBtn"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
-                    <button type="button" class="btn btn-outline-info btn-sm" id="shareAnalysisWaBtn"><i class="bi bi-whatsapp me-1"></i>Bagikan Detail</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="confirmResetModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content"><div class="modal-header"><h5 class="modal-title text-danger">Konfirmasi Reset</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Yakin ingin menghapus SEMUA data site plan? Tindakan ini tidak dapat dibatalkan.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-danger" id="confirmResetBtn">Ya, Hapus Semua</button></div></div>
-      </div>
     </div>
     
-    <!-- Konten Utama Aplikasi -->
-    <div class="container-fluid p-3 p-md-4">
-        <header class="mb-3 text-center"><h4 class="fw-bold" id="main-title">Perancangan Site Plan</h4><p id="scale-info" class="text-muted small">Pilih sekolah untuk memulai.</p></header>
-        <div id="siteplan-canvas-container" style="width:100%; max-width:1200px; margin: auto;"><div id="siteplan-canvas"></div></div>
-    </div>
+    <div id="main-app-content">
+        <!-- Modal Manajer Sekolah -->
+        <div class="modal fade" id="schoolManagerModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title"><i class="bi bi-building-gear me-2"></i>Manajer Site Plan</h5></div>
+                    <div class="modal-body">
+                        <p>Pilih site plan yang sudah ada atau buat baru.</p>
+                        <div id="schoolList" class="list-group mb-3"></div>
+                        <button class="btn btn-primary w-100" id="openNewSchoolFormBtn"><i class="bi bi-plus-circle-fill me-2"></i>Tambah Sekolah Baru</button>
+                        <label for="importJsonInput" class="btn btn-outline-primary w-100 mt-2"><i class="bi bi-upload me-2"></i>Impor File JSON</label>
+                        <input type="file" id="importJsonInput" class="d-none" accept=".json,application/json">
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <!-- Menu Bawah -->
-    <div class="bottom-nav">
-        <button class="nav-item" id="addMenuBtn"><i class="bi bi-plus-circle"></i><span>Tambah</span></button>
-        <button class="nav-item" id="analysisMenuBtn"><i class="bi bi-pie-chart"></i><span>Analisa</span></button>
-        <button class="nav-item" id="actionsMenuBtn"><i class="bi bi-three-dots"></i><span>Aksi</span></button>
+        <!-- Modal Sekolah Baru -->
+        <div class="modal fade" id="newSchoolModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title"><i class="bi bi-info-circle-fill me-2"></i>Data Sekolah Baru</h5></div>
+                    <div class="modal-body">
+                        <form id="newSchoolForm">
+                            <div class="mb-3"><label for="schoolName" class="form-label">Nama Sekolah</label><input type="text" class="form-control" id="schoolName" required></div>
+                            <div class="mb-3"><label for="schoolLevel" class="form-label">Jenjang</label><select class="form-select" id="schoolLevel"><option>PAUD</option><option selected>SD</option><option>SMP</option><option>NON FORMAL</option></select></div>
+                            <div class="mb-3"><label for="schoolDistrict" class="form-label">Kecamatan</label><input class="form-control" list="districtOptions" id="schoolDistrict" placeholder="Ketik atau pilih..."><datalist id="districtOptions"></datalist></div>
+                            <hr>
+                            <div class="mb-3">
+                                <label for="landShape" class="form-label">Jenis Lahan</label>
+                                <select class="form-select" id="landShape">
+                                    <option value="rectangle" selected>Persegi Panjang</option>
+                                    <option value="square">Persegi</option>
+                                    <option value="circle">Lingkaran</option>
+                                    <option value="triangle">Segitiga Siku-siku</option>
+                                    <option value="trapezoid">Trapesium Siku-siku</option>
+                                    <option value="parallelogram">Jajaran Genjang</option>
+                                </select>
+                            </div>
+                            <div id="landDimensionsContainer">
+                                <!-- Input dinamis untuk dimensi lahan akan muncul di sini -->
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" id="cancelNewSchoolBtn">Batal</button><button type="button" class="btn btn-primary" id="startBtn">Simpan & Mulai</button></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offcanvas dan Modal lainnya -->
+        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="addMenuOffcanvas" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+            <div class="offcanvas-header"><h5 class="offcanvas-title">Tambah Objek</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+            <div class="offcanvas-body">
+                <div class="list-group">
+                    <button type="button" class="list-group-item list-group-item-action" onclick="openAddObjectModal('building', 'Gedung Kelas')"><i class="bi bi-building me-3"></i>Gedung</button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="openAddObjectModal('tree', 'Pohon')"><i class="bi bi-tree me-3"></i>Pohon</button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="openAddObjectModal('field', 'Lapangan')"><i class="bi bi-play-circle me-3"></i>Lapangan</button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="openAddObjectModal('parking', 'Parkiran')"><i class="bi bi-p-circle me-3"></i>Parkiran</button>
+                </div>
+            </div>
+        </div>
+        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="actionsMenuOffcanvas" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+            <div class="offcanvas-header"><h5 class="offcanvas-title">Aksi</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+            <div class="offcanvas-body">
+                <div class="list-group">
+                    <button type="button" class="list-group-item list-group-item-action" id="manageSchoolsBtn"><i class="bi bi-building-gear me-3 text-primary"></i>Ganti Sekolah</button>
+                    <button type="button" class="list-group-item list-group-item-action" id="refreshBtn"><i class="bi bi-arrow-repeat me-3 text-primary"></i>Refresh Data</button>
+                    <hr class="my-2">
+                    <button type="button" class="list-group-item list-group-item-action" id="undoBtn" disabled><i class="bi bi-arrow-counterclockwise me-3"></i>Undo</button>
+                    <button type="button" class="list-group-item list-group-item-action" id="redoBtn" disabled><i class="bi bi-arrow-clockwise me-3"></i>Redo</button>
+                    <hr class="my-2">
+                    <button type="button" class="list-group-item list-group-item-action" id="cutBtn" disabled><i class="bi bi-scissors me-3"></i>Potong</button>
+                    <button type="button" class="list-group-item list-group-item-action" id="copyBtn" disabled><i class="bi bi-copy me-3"></i>Salin</button>
+                    <button type="button" class="list-group-item list-group-item-action" id="pasteBtn" disabled><i class="bi bi-clipboard-plus me-3"></i>Tempel</button>
+                    <hr class="my-2">
+                    <button type="button" class="list-group-item list-group-item-action" id="editObjectBtn" disabled><i class="bi bi-pencil-square me-3 text-warning"></i>Edit Objek</button>
+                    <button type="button" class="list-group-item list-group-item-action" id="deleteBtn" disabled><i class="bi bi-trash me-3 text-danger"></i>Hapus Objek</button>
+                    <hr class="my-2">
+                    <button type="button" class="list-group-item list-group-item-action" id="downloadPdfBtn"><i class="bi bi-file-earmark-pdf me-3 text-success"></i>Unduh Site Plan (PDF)</button>
+                    <button type="button" class="list-group-item list-group-item-action" id="exportJsonBtn"><i class="bi bi-file-code me-3 text-primary"></i>Ekspor Data (JSON)</button>
+                    <button type="button" class="list-group-item list-group-item-action" id="shareWaBtn"><i class="bi bi-whatsapp me-3 text-info"></i>Bagikan Ringkasan</button>
+                    <hr class="my-2">
+                    <button type="button" class="list-group-item list-group-item-action text-danger" id="logoutBtn"><i class="bi bi-box-arrow-right me-3"></i>Logout</button>
+                    <button type="button" class="list-group-item list-group-item-action" id="resetBtn"><i class="bi bi-trash3-fill me-3 text-danger"></i>Reset Semua Data</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="addObjectModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title" id="addObjectModalTitle">Tambah Objek</h5></div>
+                    <div class="modal-body"><input type="hidden" id="addObjectType"><div class="mb-3"><label for="addLabel" class="form-label">Label</label><input type="text" class="form-control" id="addLabel"></div><div class="row"><div class="col"><label for="addWidth" class="form-label">Panjang (m)</label><input type="number" class="form-control" id="addWidth" value="20"></div><div class="col"><label for="addHeight" class="form-label">Lebar (m)</label><input type="number" class="form-control" id="addHeight" value="15"></div></div></div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" id="confirmAddObjectBtn">Tambahkan</button></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="editObjectModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Edit Objek</h5></div>
+                    <div class="modal-body">
+                        <div class="mb-3"><label for="editLabel" class="form-label">Label</label><input type="text" class="form-control" id="editLabel"></div>
+                        <div class="row">
+                            <div class="col"><label for="editWidth" class="form-label">Panjang (m)</label><input type="number" class="form-control" id="editWidth"></div>
+                            <div class="col"><label for="editHeight" class="form-label">Lebar (m)</label><input type="number" class="form-control" id="editHeight"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" id="confirmEditObjectBtn">Simpan Perubahan</button></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="analysisModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Analisa Site Plan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="analysisModalBody">
+                        <!-- Konten dinamis akan dimuat di sini -->
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center">
+                        <button type="button" class="btn btn-outline-success btn-sm" id="downloadExcelBtn"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" id="downloadAnalysisPdfBtn"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+                        <button type="button" class="btn btn-outline-info btn-sm" id="shareAnalysisWaBtn"><i class="bi bi-whatsapp me-1"></i>Bagikan Detail</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="confirmResetModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content"><div class="modal-header"><h5 class="modal-title text-danger">Konfirmasi Reset</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Yakin ingin menghapus SEMUA data site plan? Tindakan ini tidak dapat dibatalkan.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-danger" id="confirmResetBtn">Ya, Hapus Semua</button></div></div>
+        </div>
+        </div>
+        
+        <!-- Konten Utama Aplikasi -->
+        <div class="container-fluid p-3 p-md-4">
+            <header class="mb-3 text-center"><h4 class="fw-bold" id="main-title">Perancangan Site Plan</h4><p id="scale-info" class="text-muted small">Pilih sekolah untuk memulai.</p></header>
+            <div id="siteplan-canvas-container" style="width:100%; max-width:1200px; margin: auto;"><div id="siteplan-canvas"></div></div>
+        </div>
+
+        <!-- Menu Bawah -->
+        <div class="bottom-nav">
+            <button class="nav-item" id="addMenuBtn"><i class="bi bi-plus-circle"></i><span>Tambah</span></button>
+            <button class="nav-item" id="analysisMenuBtn"><i class="bi bi-pie-chart"></i><span>Analisa</span></button>
+            <button class="nav-item" id="actionsMenuBtn"><i class="bi bi-three-dots"></i><span>Aksi</span></button>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -240,14 +326,7 @@
         const MULTI_SITEPLAN_DATA_KEY = 'multiSiteplanData';
         const LAST_OPENED_KEY = 'lastOpenedSchoolId';
         const KECAMATAN_LIST = ['Angsana', 'Batu Licin', 'Karang Bintang', 'Kuranji', 'Kusan Hilir', 'Kusan Hulu', 'Kusan Tengah', 'Mantewe', 'Satui', 'Simpang Empat', 'Sungai Loban', 'Teluk Kepayang'];
-        const schoolManagerModal = new bootstrap.Modal(document.getElementById('schoolManagerModal'));
-        const newSchoolModal = new bootstrap.Modal(document.getElementById('newSchoolModal'));
-        const addObjectModal = new bootstrap.Modal(document.getElementById('addObjectModal'));
-        const editObjectModal = new bootstrap.Modal(document.getElementById('editObjectModal'));
-        const analysisModal = new bootstrap.Modal(document.getElementById('analysisModal'));
-        const confirmResetModal = new bootstrap.Modal(document.getElementById('confirmResetModal'));
-        const addMenuOffcanvas = new bootstrap.Offcanvas(document.getElementById('addMenuOffcanvas'));
-        const actionsMenuOffcanvas = new bootstrap.Offcanvas(document.getElementById('actionsMenuOffcanvas'));
+        let schoolManagerModal, newSchoolModal, addObjectModal, editObjectModal, analysisModal, confirmResetModal, addMenuOffcanvas, actionsMenuOffcanvas;
 
         let allSchoolData = {};
         let currentSchoolId = null;
@@ -259,7 +338,7 @@
         let clipboard = null;
         let analysisCurrentPage = 1;
         const analysisItemsPerPage = 5;
-
+        
         // --- Konversi & Kalkulasi ---
         const meterToPx = (m) => m * scale;
         const pxToMeter = (px) => px / scale;
@@ -935,8 +1014,17 @@
 
         function shareViaWhatsapp() { if(!currentSchoolId) return; const totalLandArea = calculateLandArea().toFixed(1); const remainingArea = calculateRemainingArea().toFixed(1); let objectDetails = objects.map(obj => { const w = pxToMeter(obj.width).toFixed(1); const h = pxToMeter(obj.height).toFixed(1); return `- ${obj.label} (${w}m x ${h}m): ${(w * h).toFixed(1)} m²`; }).join('\n'); const message = `*Ringkasan Site Plan*\n\n*Sekolah:* ${schoolName}\n*Jenjang:* ${schoolLevel}\n*Kecamatan:* ${schoolDistrict}\n*Total Lahan:* ${totalLandArea} m²\n\n*Rincian Objek:*\n${objectDetails || '- Kosong'}\n\n*Sisa Lahan:* ${remainingArea} m²`; window.open(`https://wa.me/?text=${encodeURIComponent(message.trim())}`, '_blank'); }
 
-        // --- Event Listeners ---
-        window.addEventListener('load', () => {
+        function initializeApp() {
+            // Inisialisasi semua modal dan offcanvas setelah login berhasil
+            schoolManagerModal = new bootstrap.Modal(document.getElementById('schoolManagerModal'));
+            newSchoolModal = new bootstrap.Modal(document.getElementById('newSchoolModal'));
+            addObjectModal = new bootstrap.Modal(document.getElementById('addObjectModal'));
+            editObjectModal = new bootstrap.Modal(document.getElementById('editObjectModal'));
+            analysisModal = new bootstrap.Modal(document.getElementById('analysisModal'));
+            confirmResetModal = new bootstrap.Modal(document.getElementById('confirmResetModal'));
+            addMenuOffcanvas = new bootstrap.Offcanvas(document.getElementById('addMenuOffcanvas'));
+            actionsMenuOffcanvas = new bootstrap.Offcanvas(document.getElementById('actionsMenuOffcanvas'));
+
             allSchoolData = JSON.parse(localStorage.getItem(MULTI_SITEPLAN_DATA_KEY)) || {};
             const lastOpenedId = localStorage.getItem(LAST_OPENED_KEY);
             populateDistrictOptions();
@@ -946,115 +1034,145 @@
             } else {
                 showSchoolManager();
             }
-        });
-        window.addEventListener('resize', () => { if (!currentSchoolId) return; setupCanvas(); renderAllObjects(); });
-        canvas.addEventListener('click', (e) => { if (e.target === canvas) deselectAll(); });
-        document.getElementById('openNewSchoolFormBtn').addEventListener('click', () => {
-            schoolManagerModal.hide();
-            document.getElementById('landShape').value = 'rectangle';
-            renderDimensionInputs('rectangle');
-            newSchoolModal.show();
-        });
-        document.getElementById('cancelNewSchoolBtn').addEventListener('click', () => { newSchoolModal.hide(); showSchoolManager(); });
-        document.getElementById('startBtn').addEventListener('click', () => {
-            const newId = `school-${Date.now()}`;
-            const shape = document.getElementById('landShape').value;
-            let dims = {};
-            let widthM = 100, heightM = 80;
 
-            switch (shape) {
-                case 'square':
-                    const side = parseFloat(document.getElementById('landSide').value) || 80;
-                    dims = { side }; widthM = heightM = side; break;
-                case 'circle':
-                    const radius = parseFloat(document.getElementById('landRadius').value) || 50;
-                    dims = { radius }; widthM = heightM = radius * 2; break;
-                case 'triangle':
-                    const base = parseFloat(document.getElementById('landBase').value) || 100;
-                    const triangleHeight = parseFloat(document.getElementById('landTriangleHeight').value) || 80;
-                    dims = { base, height: triangleHeight }; widthM = base; heightM = triangleHeight; break;
-                case 'trapezoid':
-                    const sideA = parseFloat(document.getElementById('landSideA').value) || 60;
-                    const sideB = parseFloat(document.getElementById('landSideB').value) || 100;
-                    const trapezoidHeight = parseFloat(document.getElementById('landTrapezoidHeight').value) || 80;
-                    dims = { sideA, sideB, height: trapezoidHeight }; widthM = Math.max(sideA, sideB); heightM = trapezoidHeight; break;
-                case 'parallelogram':
-                    const pBase = parseFloat(document.getElementById('landParallelogramBase').value) || 100;
-                    const pHeight = parseFloat(document.getElementById('landParallelogramHeight').value) || 80;
-                    const pOffset = parseFloat(document.getElementById('landParallelogramOffset').value) || 20;
-                    dims = { base: pBase, height: pHeight, offset: pOffset }; widthM = pBase + pOffset; heightM = pHeight; break;
-                case 'rectangle':
-                default:
-                    const width = parseFloat(document.getElementById('landWidth').value) || 100;
-                    const height = parseFloat(document.getElementById('landHeight').value) || 80;
-                    dims = { width, height }; widthM = width; heightM = height; break;
-            }
+             // --- Event Listeners Aplikasi Utama ---
+            window.addEventListener('resize', () => { if (!currentSchoolId) return; setupCanvas(); renderAllObjects(); });
+            canvas.addEventListener('click', (e) => { if (e.target === canvas) deselectAll(); });
+            document.getElementById('openNewSchoolFormBtn').addEventListener('click', () => {
+                schoolManagerModal.hide();
+                document.getElementById('landShape').value = 'rectangle';
+                renderDimensionInputs('rectangle');
+                newSchoolModal.show();
+            });
+            document.getElementById('cancelNewSchoolBtn').addEventListener('click', () => { newSchoolModal.hide(); showSchoolManager(); });
+            document.getElementById('startBtn').addEventListener('click', () => {
+                const newId = `school-${Date.now()}`;
+                const shape = document.getElementById('landShape').value;
+                let dims = {};
+                let widthM = 100, heightM = 80;
 
-            allSchoolData[newId] = { schoolName: document.getElementById('schoolName').value || 'Sekolah Baru', schoolLevel: document.getElementById('schoolLevel').value, schoolDistrict: document.getElementById('schoolDistrict').value || 'Tanpa Kecamatan', landShape: shape, landDimensions: dims, landWidthMeters: widthM, landHeightMeters: heightM, objects: [], nextId: 0 };
-            newSchoolModal.hide();
-            loadSchool(newId);
-        });
-        document.getElementById('landShape').addEventListener('change', (e) => renderDimensionInputs(e.target.value));
-        document.getElementById('confirmAddObjectBtn').addEventListener('click', confirmAddObject);
-        document.getElementById('confirmEditObjectBtn').addEventListener('click', confirmEditObject);
-        document.getElementById('editObjectBtn').addEventListener('click', openEditObjectModal);
-        
-        document.getElementById('copyBtn').addEventListener('click', () => {
-            copyObject();
-            actionsMenuOffcanvas.hide();
-        });
-        document.getElementById('cutBtn').addEventListener('click', () => {
-            cutObject();
-            actionsMenuOffcanvas.hide();
-        });
-        document.getElementById('pasteBtn').addEventListener('click', () => {
-            pasteObject();
-            actionsMenuOffcanvas.hide();
-        });
-        document.getElementById('deleteBtn').addEventListener('click', deleteSelectedObject);
-
-        document.getElementById('resetBtn').addEventListener('click', () => confirmResetModal.show());
-        document.getElementById('confirmResetBtn').addEventListener('click', () => { confirmResetModal.hide(); resetAllData(); });
-        document.getElementById('manageSchoolsBtn').addEventListener('click', () => { actionsMenuOffcanvas.hide(); showSchoolManager(); });
-        document.getElementById('addMenuBtn').addEventListener('click', () => addMenuOffcanvas.show());
-        document.getElementById('actionsMenuBtn').addEventListener('click', () => actionsMenuOffcanvas.show());
-        document.getElementById('analysisMenuBtn').addEventListener('click', showAnalysis);
-        document.getElementById('downloadExcelBtn').addEventListener('click', downloadAnalysisExcel);
-        document.getElementById('downloadAnalysisPdfBtn').addEventListener('click', downloadAnalysisPdf);
-        document.getElementById('shareAnalysisWaBtn').addEventListener('click', shareAnalysisWhatsapp);
-        document.getElementById('downloadPdfBtn').addEventListener('click', generatePdf);
-        document.getElementById('exportJsonBtn').addEventListener('click', exportToJson);
-        document.getElementById('importJsonInput').addEventListener('change', importFromJson);
-        document.getElementById('shareWaBtn').addEventListener('click', shareViaWhatsapp);
-        document.getElementById('undoBtn').addEventListener('click', undo);
-        document.getElementById('redoBtn').addEventListener('click', redo);
-        document.getElementById('refreshBtn').addEventListener('click', refreshData);
-        
-        document.addEventListener('keydown', (e) => {
-            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
-
-            if (e.ctrlKey || e.metaKey) { // metaKey untuk macOS
-                switch (e.key.toLowerCase()) {
-                    case 'c':
-                        if (selectedObject) { e.preventDefault(); copyObject(); }
-                        break;
-                    case 'x':
-                        if (selectedObject) { e.preventDefault(); cutObject(); }
-                        break;
-                    case 'v':
-                        if (clipboard) { e.preventDefault(); pasteObject(); }
-                        break;
+                switch (shape) {
+                    case 'square':
+                        const side = parseFloat(document.getElementById('landSide').value) || 80;
+                        dims = { side }; widthM = heightM = side; break;
+                    case 'circle':
+                        const radius = parseFloat(document.getElementById('landRadius').value) || 50;
+                        dims = { radius }; widthM = heightM = radius * 2; break;
+                    case 'triangle':
+                        const base = parseFloat(document.getElementById('landBase').value) || 100;
+                        const triangleHeight = parseFloat(document.getElementById('landTriangleHeight').value) || 80;
+                        dims = { base, height: triangleHeight }; widthM = base; heightM = triangleHeight; break;
+                    case 'trapezoid':
+                        const sideA = parseFloat(document.getElementById('landSideA').value) || 60;
+                        const sideB = parseFloat(document.getElementById('landSideB').value) || 100;
+                        const trapezoidHeight = parseFloat(document.getElementById('landTrapezoidHeight').value) || 80;
+                        dims = { sideA, sideB, height: trapezoidHeight }; widthM = Math.max(sideA, sideB); heightM = trapezoidHeight; break;
+                    case 'parallelogram':
+                        const pBase = parseFloat(document.getElementById('landParallelogramBase').value) || 100;
+                        const pHeight = parseFloat(document.getElementById('landParallelogramHeight').value) || 80;
+                        const pOffset = parseFloat(document.getElementById('landParallelogramOffset').value) || 20;
+                        dims = { base: pBase, height: pHeight, offset: pOffset }; widthM = pBase + pOffset; heightM = pHeight; break;
+                    case 'rectangle':
+                    default:
+                        const width = parseFloat(document.getElementById('landWidth').value) || 100;
+                        const height = parseFloat(document.getElementById('landHeight').value) || 80;
+                        dims = { width, height }; widthM = width; heightM = height; break;
                 }
-            } else if (e.key === 'Delete' || e.key === 'Backspace') {
-                if (selectedObject) { e.preventDefault(); deleteSelectedObject(); }
-            }
-        });
 
-        const addMenuOffcanvasEl = document.getElementById('addMenuOffcanvas');
-        const actionsMenuOffcanvasEl = document.getElementById('actionsMenuOffcanvas');
-        const bottomNav = document.querySelector('.bottom-nav');
-        [addMenuOffcanvasEl, actionsMenuOffcanvasEl].forEach(el => { el.addEventListener('show.bs.offcanvas', () => bottomNav.classList.add('hidden')); el.addEventListener('hide.bs.offcanvas', () => bottomNav.classList.remove('hidden')); });
+                allSchoolData[newId] = { schoolName: document.getElementById('schoolName').value || 'Sekolah Baru', schoolLevel: document.getElementById('schoolLevel').value, schoolDistrict: document.getElementById('schoolDistrict').value || 'Tanpa Kecamatan', landShape: shape, landDimensions: dims, landWidthMeters: widthM, landHeightMeters: heightM, objects: [], nextId: 0 };
+                newSchoolModal.hide();
+                loadSchool(newId);
+            });
+            document.getElementById('landShape').addEventListener('change', (e) => renderDimensionInputs(e.target.value));
+            document.getElementById('confirmAddObjectBtn').addEventListener('click', confirmAddObject);
+            document.getElementById('confirmEditObjectBtn').addEventListener('click', confirmEditObject);
+            document.getElementById('editObjectBtn').addEventListener('click', openEditObjectModal);
+            
+            document.getElementById('copyBtn').addEventListener('click', () => {
+                copyObject();
+                actionsMenuOffcanvas.hide();
+            });
+            document.getElementById('cutBtn').addEventListener('click', () => {
+                cutObject();
+                actionsMenuOffcanvas.hide();
+            });
+            document.getElementById('pasteBtn').addEventListener('click', () => {
+                pasteObject();
+                actionsMenuOffcanvas.hide();
+            });
+            document.getElementById('deleteBtn').addEventListener('click', deleteSelectedObject);
+
+            document.getElementById('resetBtn').addEventListener('click', () => confirmResetModal.show());
+            document.getElementById('confirmResetBtn').addEventListener('click', () => { confirmResetModal.hide(); resetAllData(); });
+            document.getElementById('manageSchoolsBtn').addEventListener('click', () => { actionsMenuOffcanvas.hide(); showSchoolManager(); });
+            document.getElementById('addMenuBtn').addEventListener('click', () => addMenuOffcanvas.show());
+            document.getElementById('actionsMenuBtn').addEventListener('click', () => actionsMenuOffcanvas.show());
+            document.getElementById('analysisMenuBtn').addEventListener('click', showAnalysis);
+            document.getElementById('downloadExcelBtn').addEventListener('click', downloadAnalysisExcel);
+            document.getElementById('downloadAnalysisPdfBtn').addEventListener('click', downloadAnalysisPdf);
+            document.getElementById('shareAnalysisWaBtn').addEventListener('click', shareAnalysisWhatsapp);
+            document.getElementById('downloadPdfBtn').addEventListener('click', generatePdf);
+            document.getElementById('exportJsonBtn').addEventListener('click', exportToJson);
+            document.getElementById('importJsonInput').addEventListener('change', importFromJson);
+            document.getElementById('shareWaBtn').addEventListener('click', shareViaWhatsapp);
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
+            document.getElementById('refreshBtn').addEventListener('click', refreshData);
+            document.getElementById('logoutBtn').addEventListener('click', () => location.reload());
+            
+            document.addEventListener('keydown', (e) => {
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+
+                if (e.ctrlKey || e.metaKey) { // metaKey untuk macOS
+                    switch (e.key.toLowerCase()) {
+                        case 'c':
+                            if (selectedObject) { e.preventDefault(); copyObject(); }
+                            break;
+                        case 'x':
+                            if (selectedObject) { e.preventDefault(); cutObject(); }
+                            break;
+                        case 'v':
+                            if (clipboard) { e.preventDefault(); pasteObject(); }
+                            break;
+                    }
+                } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (selectedObject) { e.preventDefault(); deleteSelectedObject(); }
+                }
+            });
+
+            const addMenuOffcanvasEl = document.getElementById('addMenuOffcanvas');
+            const actionsMenuOffcanvasEl = document.getElementById('actionsMenuOffcanvas');
+            const bottomNav = document.querySelector('.bottom-nav');
+            [addMenuOffcanvasEl, actionsMenuOffcanvasEl].forEach(el => { el.addEventListener('show.bs.offcanvas', () => bottomNav.classList.add('hidden')); el.addEventListener('hide.bs.offcanvas', () => bottomNav.classList.remove('hidden')); });
+        }
+
+
+        // --- Event Listener Halaman Login ---
+        window.addEventListener('load', () => {
+            const loginForm = document.getElementById('login-form');
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const user = document.getElementById('username').value;
+                const pass = document.getElementById('password').value;
+                const errorEl = document.getElementById('login-error');
+
+                // PERINGATAN: Otentikasi ini tidak aman!
+                // Hanya untuk tujuan demonstrasi.
+                if (user === 'admin' && pass === 'mada123') {
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('main-app-content').style.display = 'block';
+                    initializeApp();
+                } else {
+                    errorEl.textContent = 'Username atau password salah.';
+                    document.getElementById('password').value = '';
+                    const loginCard = document.querySelector('.login-card');
+                    loginCard.classList.add('shake');
+                    setTimeout(() => loginCard.classList.remove('shake'), 500);
+                }
+            });
+        });
     </script>
 </body>
 </html>
+
 
